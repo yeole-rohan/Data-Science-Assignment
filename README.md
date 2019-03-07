@@ -1,4 +1,4 @@
-# Data-Scince-Repo
+# Data-Science-Assignment
 Our goal is to reduce the marketing cost of a company depending upon the method they used  
 upon successfull implementation of modal has shown us some parameters tha marketing team has to taken care of:-
 
