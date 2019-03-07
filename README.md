@@ -8,4 +8,3 @@ upon successfull implementation of modal has shown us some parameters tha market
 4) age (client age)
 5) emp.var.rate (employment variability index)
 6) month_oct(Employess those were contacted in october)
-
