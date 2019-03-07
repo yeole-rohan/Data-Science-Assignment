@@ -241,7 +241,7 @@ def plotfeatureimp(fl,col):
     plt.barh(range(len(fl)),fl)
     plt.yticks(range(len(col[:-1])),col[:-1])
     
-def plotAUCDTRF(aucs,leafs,splits):
+def plotAUCdatasetRF(aucs,leafs,splits):
     '''Plots AUC for each value of Leaf and Split combination'''
     for i in range(len(splits)):
         plt.plot(leafs,aucs[len(leafs)*i:len(leafs)*i+len(leafs)], label = 'Split value= ' + str(splits[i]))
@@ -294,35 +294,61 @@ def LRmodel(train , validate , c, l_1 = False):
     fpr, tpr, threshold = metrics.roc_curve(yval, pred_proba_val)
     accuracy = metrics.accuracy_score(yval, logreg.predict(xval))
     return auc,logreg.coef_, tpr, fpr, threshold, accuracy
-length = len(train)
-print(length)
 
-"""Cross-Validation and Tuning the hyperparameters for Logistic Regression"""
-from sklearn.model_selection import KFold
+#AdaBoostClassifier Model
+from sklearn.ensemble import AdaBoostClassifier
+def adaboost(settrain,settest, nestimator = 100):
+    X=list(settrain.columns)
+    Y='y_yes'
+    X.remove('y_yes')
+    xtrain=settrain[X]
+    ytrain=settrain[Y]
+    xtest=settest[X]
+    ytest=settest[Y]
+    #Instantiate a Decision Stump
+    dt_stump = DecisionTreeClassifier(max_depth=1, min_samples_leaf=1)
+    
+    #Instantitate an AdaBoostClassifier using the decision stump defined above
+    ad = AdaBoostClassifier(base_estimator=dt_stump, n_estimators=nestimator)
+    
+    #fit the AdaBoostClassifier on the training data
+    ad.fit(xtrain,ytrain)
+    
+    #Predict the Y values for the test/validation data
+    Y_pred = ad.predict(xtest)
+    
+    #Predict class probabilities of input validation data
+    adplot=ad.predict_proba(xtest)
+    
+    
+    adpre=adplot[:,1]
+    
+    #Computation to compute AUC score
+    adfpr, adtpr, adthresholds=metrics.roc_curve(ytest,adpre)
+    adscore=metrics.roc_auc_score(ytest,adpre)
+    
+    #Feature importances. The higher the score, the more important the feature.
+    ii=ad.feature_importances_
+    return adscore,ii
+
+
+from sklearn.cross_validation import KFold
 from sklearn import metrics
 from sklearn import preprocessing
+def kfoldadaboost(dataset, k, estimators):
+    aucs ={}
+    kf=KFold(len(dataset),k) #Provides indices to split data in train/test sets
+    for e in estimators:
+        for train_idx, vali_idx in kf:
+            cv_train,cv_validate=dataset.iloc[train_idx,:], dataset.iloc[vali_idx,:]
+            
+            #Run AdaBoostClassifier function defined above based on user input
+            core,f= adaboost(cv_train,cv_validate, nestimator = e) 
+            
+            #storing the auc Scores in the aucs dictionary for all the estimator values.
+            aucs[e] = []
+            aucs[e].append(core)
+    return aucs
+adaauc_test,adafea=adaboost(train,test,adac)
+plotfeatureimportances(train,adafea)
 
-cs = np.logspace(-4,5,10)
-    '''Performs kfold cross validation for the dataset and also searches for the optimal regularixation parameter '''
-aucs = {}
-kf = KFold(n_splits=2, random_state=None, shuffle=False) #Provides indices to split data in train/test sets
-for train_idx, vali_idx in kf:
-    
-    #For loop to extract and append AUC values to array from training data
-    cv_train,cv_validate=dataset.iloc[train_idx,:], dataset.iloc[vali_idx,:]
-    for c in cs:
-        auc, f_imp, tpr, fpr, threshold, accuracy = LRmodel(cv_train,cv_validate,c, l_1 = l1_penalty)
-        if c in aucs:
-            aucs[c].append(auc)
-        else:
-            aucs[c]=[]
-            aucs[c].append(auc)
-            print( aucs)
-
-
-#aucs_l2=kfoldlr(train,5,cs,l1_penalty = False)
-#aucs_l1=kfoldlr(train , cs, l1_penalty= True)
-
-
-means_l2,cval_l2 = getmeanauc(aucs_l2,'Logistic_Regression')
-means_l1,cval_l1 = getmeanauc(aucs_l1,'Logistic_Regression')
