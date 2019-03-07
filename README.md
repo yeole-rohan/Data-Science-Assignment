@@ -10,4 +10,4 @@ upon successfull implementation of modal has shown us some parameters tha market
 6) month_oct(Employess those were contacted in october)
 
 
-![alt text](http://url/to/img.png)
+![result](https://github.com/yeole-rohan/Data-Science-Assignment/blob/master/result.JPG)
